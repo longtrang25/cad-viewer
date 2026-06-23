@@ -141,7 +141,7 @@ function App() {
 
         {/* Measure Result Banner */}
         {measureResult !== null && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-900/90 border border-blue-500 text-blue-100 px-6 py-3 rounded-full shadow-2xl backdrop-blur-md z-20 flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-900/90 border border-blue-500 text-blue-100 px-6 py-3 rounded-full shadow-2xl backdrop-blur-md z-50 flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
             <Ruler size={18} className="text-blue-400" />
             <span className="font-semibold">Khoảng cách: {measureResult.toFixed(2)} đơn vị</span>
             <button 
@@ -155,7 +155,7 @@ function App() {
 
         {/* Floating Tool Bar */}
         {fileUrl && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 bg-slate-800/90 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl z-10">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 bg-slate-800/90 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl z-50">
             <ToolButton 
               active={activeTool === 'pan'} 
               onClick={() => { setActiveTool('pan'); setMeasureResult(null); }} 
