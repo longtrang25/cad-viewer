@@ -108,7 +108,9 @@ function App() {
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold">
             V
           </div>
-          <h1 className="font-semibold text-lg tracking-tight">CAD Viewer</h1>
+          <h1 className="font-semibold text-lg tracking-tight">
+            CAD Viewer <span className="text-slate-400 text-sm font-medium ml-1">by Blaprin</span>
+          </h1>
         </div>
         
         {fileUrl && (
