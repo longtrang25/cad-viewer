@@ -135,7 +135,11 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
 
               const newMat = obj.material.clone();
               if (newMat.uniforms && newMat.uniforms.color) {
-                 newMat.uniforms.color.value = new THREE.Color(hex);
+                 const exactColor = new THREE.Color();
+                 exactColor.r = ((hex >> 16) & 0xff) / 255.0;
+                 exactColor.g = ((hex >> 8) & 0xff) / 255.0;
+                 exactColor.b = (hex & 0xff) / 255.0;
+                 newMat.uniforms.color.value = exactColor;
               }
               obj.material = newMat;
             }
@@ -169,33 +173,46 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
           const glY = Math.floor(canvas.height - clientY);
 
           const readSize = 9; // 9x9 area to make thin lines easier to click
-          const readBuffer = new Uint8Array(readSize * readSize * 4);
-          renderer.readRenderTargetPixels(rt, glX - Math.floor(readSize/2), glY - Math.floor(readSize/2), readSize, readSize, readBuffer);
+          let startX = glX - Math.floor(readSize/2);
+          let startY = glY - Math.floor(readSize/2);
+          let width = readSize;
+          let height = readSize;
+
+          if (startX < 0) { width += startX; startX = 0; }
+          if (startY < 0) { height += startY; startY = 0; }
+          if (startX + width > canvas.width) { width = canvas.width - startX; }
+          if (startY + height > canvas.height) { height = canvas.height - startY; }
 
           let pickedLayer = "";
-          for (let i = 0; i < readSize * readSize; i++) {
-             const r = readBuffer[i*4];
-             const g = readBuffer[i*4 + 1];
-             const b = readBuffer[i*4 + 2];
-             const a = readBuffer[i*4 + 3];
-             if (a > 0 && (r > 0 || g > 0 || b > 0)) {
-                 let bestDist = Infinity;
-                 let bestLayer = "";
-                 for (const [lHex, name] of colorToLayer.entries()) {
-                     const lr = (lHex >> 16) & 0xff;
-                     const lg = (lHex >> 8) & 0xff;
-                     const lb = lHex & 0xff;
-                     const dist = Math.abs(r - lr) + Math.abs(g - lg) + Math.abs(b - lb);
-                     if (dist < bestDist) {
-                         bestDist = dist;
-                         bestLayer = name;
-                     }
-                 }
-                 if (bestDist < 20) {
-                     pickedLayer = bestLayer;
-                     break;
-                 }
-             }
+
+          if (width > 0 && height > 0) {
+            const readBuffer = new Uint8Array(width * height * 4);
+            renderer.readRenderTargetPixels(rt, startX, startY, width, height, readBuffer);
+
+            for (let i = 0; i < width * height; i++) {
+               const pr = readBuffer[i*4];
+               const pg = readBuffer[i*4 + 1];
+               const pb = readBuffer[i*4 + 2];
+               const pa = readBuffer[i*4 + 3];
+               if (pa > 0 && (pr > 0 || pg > 0 || pb > 0)) {
+                   let bestDist = Infinity;
+                   let bestLayer = "";
+                   for (const [lHex, name] of colorToLayer.entries()) {
+                       const lr = (lHex >> 16) & 0xff;
+                       const lg = (lHex >> 8) & 0xff;
+                       const lb = lHex & 0xff;
+                       const dist = Math.abs(pr - lr) + Math.abs(pg - lg) + Math.abs(pb - lb);
+                       if (dist < bestDist) {
+                           bestDist = dist;
+                           bestLayer = name;
+                       }
+                   }
+                   if (bestDist < 20) {
+                       pickedLayer = bestLayer;
+                       break;
+                   }
+               }
+            }
           }
 
           // Restore
