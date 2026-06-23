@@ -165,7 +165,7 @@ function App() {
         {measureResult !== null && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-900/90 border border-blue-500 text-blue-100 px-6 py-3 rounded-full shadow-2xl backdrop-blur-md z-50 flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
             <Ruler size={18} className="text-blue-400" />
-            <span className="font-semibold">Khoảng cách: {measureResult.toFixed(2)} đơn vị</span>
+            <span className="font-semibold">Khoảng cách: {measureResult.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m</span>
             <button 
               onClick={() => setMeasureResult(null)}
               className="ml-2 text-blue-300 hover:text-white"
