@@ -6,6 +6,20 @@ RUN apt-get update && apt-get install -y \
     gdebi-core \
     libxcb-util1 \
     xvfb \
+    libxkbcommon-x11-0 \
+    libxkbcommon0 \
+    libgl1 \
+    libegl1 \
+    libfontconfig1 \
+    libdbus-1-3 \
+    libxcb-cursor0 \
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-keysyms1 \
+    libxcb-randr0 \
+    libxcb-render-util0 \
+    libxcb-shape0 \
+    libxcb-xfixes0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Fix library symlink issue
