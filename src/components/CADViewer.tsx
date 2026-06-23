@@ -12,11 +12,12 @@ export interface CADViewerRef {
 interface CADViewerProps {
   fileUrl: string;
   activeTool: 'pan' | 'measure' | 'markup';
+  markupColor?: string;
   onLayersLoaded: (layers: LayerInfo[]) => void;
   onMeasureResult?: (distance: number, pt1: THREE.Vector3, pt2: THREE.Vector3) => void;
 }
 
-const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeTool, onLayersLoaded, onMeasureResult }, ref) => {
+const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeTool, markupColor = '#ef4444', onLayersLoaded, onMeasureResult }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerInstance = useRef<DxfViewer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,7 +172,7 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
     if (!ctx) return;
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#ef4444'; // Red for markup
+    ctx.strokeStyle = markupColor; // Dynamic markup color
     ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
     ctx.stroke();
   };

@@ -4,10 +4,20 @@ import type { CADViewerRef } from './components/CADViewer';
 import { Upload, Layers, Ruler, Edit3, Settings, Info, Eye, EyeOff, Trash2 } from 'lucide-react';
 import type { LayerInfo } from 'dxf-viewer';
 
+const COLORS = [
+  { name: 'Đỏ', value: '#ef4444' },
+  { name: 'Vàng', value: '#eab308' },
+  { name: 'Xanh lá', value: '#22c55e' },
+  { name: 'Xanh dương', value: '#3b82f6' },
+  { name: 'Tím', value: '#a855f7' },
+  { name: 'Trắng', value: '#ffffff' },
+];
+
 function App() {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const [activeTool, setActiveTool] = useState<'pan' | 'measure' | 'markup'>('pan');
+  const [markupColor, setMarkupColor] = useState('#ef4444');
   const [layers, setLayers] = useState<LayerInfo[]>([]);
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
   const [measureResult, setMeasureResult] = useState<number | null>(null);
@@ -134,6 +144,7 @@ function App() {
             ref={viewerRef}
             fileUrl={fileUrl} 
             activeTool={activeTool} 
+            markupColor={markupColor}
             onLayersLoaded={handleLayersLoaded}
             onMeasureResult={handleMeasureResult}
           />
@@ -177,6 +188,18 @@ function App() {
             />
             {activeTool === 'markup' && (
               <>
+                <div className="w-px h-8 bg-slate-700 mx-1"></div>
+                <div className="flex items-center gap-2 px-2">
+                  {COLORS.map(c => (
+                    <button
+                      key={c.value}
+                      onClick={() => setMarkupColor(c.value)}
+                      className={`w-6 h-6 rounded-full border-2 transition-transform ${markupColor === c.value ? 'scale-125 border-white shadow-lg' : 'border-transparent hover:scale-110'}`}
+                      style={{ backgroundColor: c.value }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
                 <div className="w-px h-8 bg-slate-700 mx-1"></div>
                 <button 
                   onClick={() => viewerRef.current?.clearMarkup()}
