@@ -20,6 +20,7 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
   const viewerInstance = useRef<DxfViewer | null>(null);
   const [loading, setLoading] = useState(true);
   const measurePoints = useRef<THREE.Vector3[]>([]);
+  const [measureScreenPoints, setMeasureScreenPoints] = useState<{x: number, y: number}[]>([]);
   
   // Markup state
   const markupCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,6 +72,11 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
 
   // Handle measurement logic
   useEffect(() => {
+    if (activeTool !== 'measure') {
+      setMeasureScreenPoints([]);
+      measurePoints.current = [];
+    }
+    
     const canvas = viewerInstance.current?.GetCanvas();
     if (!canvas) return;
 
@@ -94,7 +100,18 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
       raycaster.ray.intersectPlane(plane, target);
 
       if (target) {
-        measurePoints.current.push(target);
+        const clientX = e.clientX - rect.left;
+        const clientY = e.clientY - rect.top;
+
+        setMeasureScreenPoints(prev => {
+          if (prev.length >= 2) {
+             measurePoints.current = [target];
+             return [{x: clientX, y: clientY}];
+          }
+          measurePoints.current.push(target);
+          return [...prev, {x: clientX, y: clientY}];
+        });
+
         if (measurePoints.current.length === 2) {
           const pt1 = measurePoints.current[0];
           const pt2 = measurePoints.current[1];
@@ -102,7 +119,6 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
           if (onMeasureResult) {
             onMeasureResult(distance, pt1, pt2);
           }
-          measurePoints.current = [];
         }
       }
     };
@@ -113,7 +129,6 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
 
     return () => {
       canvas.removeEventListener('pointerdown', handlePointerDown, { capture: true });
-      measurePoints.current = [];
     };
   }, [activeTool, onMeasureResult]);
 
@@ -180,6 +195,22 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
         }`}
         style={{ touchAction: 'none' }}
       />
+
+      {/* Measurement Overlay */}
+      {activeTool === 'measure' && measureScreenPoints.length > 0 && (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none z-20">
+          {measureScreenPoints.map((pt, i) => (
+             <circle key={i} cx={pt.x} cy={pt.y} r="5" fill="#3b82f6" stroke="#fff" strokeWidth="2" />
+          ))}
+          {measureScreenPoints.length === 2 && (
+             <line 
+                x1={measureScreenPoints[0].x} y1={measureScreenPoints[0].y}
+                x2={measureScreenPoints[1].x} y2={measureScreenPoints[1].y}
+                stroke="#3b82f6" strokeWidth="3" strokeDasharray="5,5" 
+             />
+          )}
+        </svg>
+      )}
 
       {/* Markup 2D Canvas Overlay */}
       {activeTool === 'markup' && (
