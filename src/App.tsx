@@ -24,7 +24,7 @@ function App() {
   const [measureResult, setMeasureResult] = useState<number | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('CAD_API_URL') || import.meta.env.VITE_API_URL || 'http://localhost:8000');
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('CAD_API_URL') || import.meta.env.VITE_API_URL || 'https://cad-viewer-backend-du1b.onrender.com');
 
   const viewerRef = useRef<CADViewerRef>(null);
 
