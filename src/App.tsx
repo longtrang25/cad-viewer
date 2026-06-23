@@ -37,7 +37,10 @@ function App() {
           const formData = new FormData();
           formData.append('file', file);
           
-          const serverUrl = apiUrl.trim().replace(/\/$/, '');
+          let serverUrl = apiUrl.trim().replace(/\/$/, '');
+          if (!serverUrl) {
+            serverUrl = 'https://cad-viewer-backend-du1b.onrender.com';
+          }
           const response = await fetch(`${serverUrl}/api/convert-dwg`, {
             method: 'POST',
             body: formData,
@@ -333,7 +336,12 @@ function App() {
               <div className="flex justify-end gap-3">
                 <button 
                   onClick={() => {
-                    localStorage.setItem('CAD_API_URL', apiUrl);
+                    const newUrl = apiUrl;
+                    if (newUrl.trim()) {
+                      localStorage.setItem('CAD_API_URL', newUrl);
+                    } else {
+                      localStorage.removeItem('CAD_API_URL');
+                    }
                     setSettingsOpen(false);
                   }}
                   className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
