@@ -54,9 +54,9 @@ async def convert_dwg_to_dxf(file: UploadFile = File(...)):
     temp_in = tempfile.mkdtemp()
     temp_out = tempfile.mkdtemp()
     
-    input_path = os.path.join(temp_in, file.filename)
+    input_path = os.path.join(temp_in, "input.dwg")
     dxf_filename = file.filename.lower().replace(".dwg", ".dxf")
-    output_path = os.path.join(temp_out, dxf_filename)
+    output_path = os.path.join(temp_out, "input.dxf")
     
     try:
         # 1. Lưu file DWG
@@ -67,16 +67,19 @@ async def convert_dwg_to_dxf(file: UploadFile = File(...)):
         # 2. Gọi ODA File Converter
         print(f"Đang chạy ODA File Converter cho file {file.filename}...")
         
+        env = os.environ.copy()
+        env["QT_DEBUG_PLUGINS"] = "1"
+        
         if os.name == 'nt':
             command = [oda_path, temp_in, temp_out, "ACAD2018", "DXF", "0", "1"]
+            process = subprocess.run(command, capture_output=True, text=True, env=env)
         else:
             command = ["xvfb-run", "-a", oda_path, temp_in, temp_out, "ACAD2018", "DXF", "0", "1"]
-        
-        process = subprocess.run(command, capture_output=True, text=True)
+            process = subprocess.run(command, capture_output=True, text=True, env=env)
         
         if not os.path.exists(output_path):
             cleanup_dirs([temp_in, temp_out])
-            raise HTTPException(status_code=500, detail=f"Chuyển đổi thất bại. Log: {process.stderr or process.stdout}")
+            raise HTTPException(status_code=500, detail=f"Chuyển đổi thất bại (Code {process.returncode}). Stderr: {process.stderr} | Stdout: {process.stdout}")
         
         # 3. Trả file về cho client
         task = BackgroundTask(cleanup_dirs, [temp_in, temp_out])
