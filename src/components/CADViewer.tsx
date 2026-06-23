@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } f
 import { DxfViewer } from 'dxf-viewer';
 import type { LayerInfo } from 'dxf-viewer';
 import * as THREE from 'three';
+import DxfWorker from '../workers/dxf.worker?worker';
 
 export interface CADViewerRef {
   getLayers: () => LayerInfo[];
@@ -22,6 +23,8 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerInstance = useRef<DxfViewer | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingPhase, setLoadingPhase] = useState<string>('');
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const measurePoints = useRef<THREE.Vector3[]>([]);
   const [measureScreenPoints, setMeasureScreenPoints] = useState<{x: number, y: number}[]>([]);
   
@@ -59,9 +62,29 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
     const loadFile = async () => {
       try {
         setLoading(true);
+        setLoadingPhase('Khởi tạo...');
+        setLoadingProgress(0);
+
         await viewer.Load({ 
           url: fileUrl,
-          fonts: ["/fonts/arial.ttf"]
+          fonts: ["/fonts/arial.ttf"],
+          workerFactory: () => new DxfWorker(),
+          progressCbk: (phase: string, processedSize: number, totalSize: number) => {
+             let phaseText = '';
+             switch(phase) {
+               case 'fetch': phaseText = 'Đang tải tệp CAD...'; break;
+               case 'parse': phaseText = 'Đang giải mã dữ liệu...'; break;
+               case 'prepare': phaseText = 'Đang dựng hình 3D...'; break;
+               case 'font': phaseText = 'Đang tải phông chữ...'; break;
+               default: phaseText = 'Đang xử lý...';
+             }
+             setLoadingPhase(phaseText);
+             if (totalSize > 0) {
+                 setLoadingProgress(Math.round((processedSize / totalSize) * 100));
+             } else {
+                 setLoadingProgress((prev) => Math.min(prev + 5, 95));
+             }
+          }
         });
         onLayersLoaded(Array.from(viewer.GetLayers()));
         setLoading(false);
@@ -318,10 +341,19 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
   return (
     <div className="relative w-full h-full overflow-hidden">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm z-30">
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-slate-300 font-medium animate-pulse">Đang xử lý dữ liệu CAD...</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm z-30">
+          <div className="flex flex-col items-center bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700 w-80">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+            <p className="text-blue-400 font-bold text-lg mb-2 text-center">{loadingPhase || 'Đang xử lý dữ liệu CAD...'}</p>
+            
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-700 rounded-full h-2.5 mb-2 overflow-hidden shadow-inner">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-cyan-400 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-slate-400 text-sm font-medium">{loadingProgress}% hoàn thành</p>
           </div>
         </div>
       )}
