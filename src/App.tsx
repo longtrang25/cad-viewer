@@ -46,8 +46,13 @@ function App() {
           if (!response.ok) {
             let errorMsg = 'Lỗi xử lý file DWG';
             try {
-              const err = await response.json();
-              errorMsg = err.detail || errorMsg;
+              const text = await response.text();
+              try {
+                const err = JSON.parse(text);
+                errorMsg = err.detail || errorMsg;
+              } catch (e) {
+                errorMsg = `Server Error (${response.status}): ${text.substring(0, 150)}`;
+              }
             } catch (e) {}
             throw new Error(errorMsg);
           }
