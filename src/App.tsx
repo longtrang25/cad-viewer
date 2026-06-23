@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import CADViewer from './components/CADViewer';
 import type { CADViewerRef } from './components/CADViewer';
-import { Upload, Layers, Ruler, Edit3, Settings, Info, Eye, EyeOff } from 'lucide-react';
+import { Upload, Layers, Ruler, Edit3, Settings, Info, Eye, EyeOff, Trash2 } from 'lucide-react';
 import type { LayerInfo } from 'dxf-viewer';
 
 function App() {
@@ -175,6 +175,18 @@ function App() {
               icon={<Edit3 size={22} />} 
               label="Ghi chú"
             />
+            {activeTool === 'markup' && (
+              <>
+                <div className="w-px h-8 bg-slate-700 mx-1"></div>
+                <button 
+                  onClick={() => viewerRef.current?.clearMarkup()}
+                  className="p-3 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-red-400 hover:text-red-300 hover:bg-slate-700/50"
+                  title="Xóa ghi chú"
+                >
+                  <Trash2 size={22} />
+                </button>
+              </>
+            )}
           </div>
         )}
 

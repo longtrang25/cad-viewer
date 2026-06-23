@@ -6,6 +6,7 @@ import * as THREE from 'three';
 export interface CADViewerRef {
   getLayers: () => LayerInfo[];
   toggleLayer: (name: string, show: boolean) => void;
+  clearMarkup: () => void;
 }
 
 interface CADViewerProps {
@@ -34,6 +35,12 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
     toggleLayer: (name: string, show: boolean) => {
       viewerInstance.current?.ShowLayer(name, show);
       viewerInstance.current?.Render();
+    },
+    clearMarkup: () => {
+      const ctx = markupCanvasRef.current?.getContext('2d');
+      if (ctx && markupCanvasRef.current) {
+        ctx.clearRect(0, 0, markupCanvasRef.current.width, markupCanvasRef.current.height);
+      }
     }
   }));
 
