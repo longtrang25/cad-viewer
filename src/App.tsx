@@ -109,7 +109,7 @@ function App() {
             V
           </div>
           <h1 className="font-semibold text-lg tracking-tight">
-            CAD Viewer <span className="text-slate-400 text-sm font-medium ml-1">by Blaprin</span>
+            CAD Viewer <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 text-sm font-bold ml-1 tracking-wide">by Blaprin</span>
           </h1>
         </div>
         
