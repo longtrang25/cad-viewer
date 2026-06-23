@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import CADViewer from './components/CADViewer';
 import type { CADViewerRef } from './components/CADViewer';
-import { Upload, Layers, Ruler, Edit3, Settings, Info, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Upload, Layers, Ruler, Edit3, Settings, Info, Eye, EyeOff, Trash2, Target } from 'lucide-react';
 import type { LayerInfo } from 'dxf-viewer';
 
 const COLORS = [
@@ -16,10 +16,11 @@ const COLORS = [
 function App() {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [layersOpen, setLayersOpen] = useState(false);
-  const [activeTool, setActiveTool] = useState<'pan' | 'measure' | 'markup'>('pan');
+  const [activeTool, setActiveTool] = useState<'pan' | 'measure' | 'markup' | 'select_layer'>('pan');
   const [markupColor, setMarkupColor] = useState('#ef4444');
   const [layers, setLayers] = useState<LayerInfo[]>([]);
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+  const [highlightedLayer, setHighlightedLayer] = useState<string | null>(null);
   const [measureResult, setMeasureResult] = useState<number | null>(null);
   const [isConverting, setIsConverting] = useState(false);
 
@@ -64,6 +65,7 @@ function App() {
       setLayers([]);
       setHiddenLayers(new Set());
       setMeasureResult(null);
+      setHighlightedLayer(null);
     }
   };
 
@@ -75,6 +77,14 @@ function App() {
     setMeasureResult(distance);
     // Tự động chuyển về công cụ Pan sau khi đo xong để tránh click nhầm
     setActiveTool('pan');
+  }, []);
+
+  const handleLayerSelected = useCallback((layerName: string) => {
+    setLayersOpen(true);
+    setHighlightedLayer(layerName);
+    setTimeout(() => {
+      document.getElementById(`layer-${layerName}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   }, []);
 
   const toggleLayer = (name: string) => {
@@ -147,6 +157,7 @@ function App() {
             markupColor={markupColor}
             onLayersLoaded={handleLayersLoaded}
             onMeasureResult={handleMeasureResult}
+            onLayerSelected={handleLayerSelected}
           />
         )}
 
@@ -172,6 +183,13 @@ function App() {
               onClick={() => { setActiveTool('pan'); setMeasureResult(null); }} 
               icon={<Info size={22} />} 
               label="Pan (Vuốt)"
+            />
+            <div className="w-px h-8 bg-slate-700 mx-1"></div>
+            <ToolButton 
+              active={activeTool === 'select_layer'} 
+              onClick={() => { setActiveTool('select_layer'); setMeasureResult(null); }} 
+              icon={<Target size={22} />} 
+              label="Tìm Layer (Click vào nét vẽ)"
             />
             <div className="w-px h-8 bg-slate-700 mx-1"></div>
             <ToolButton 
@@ -225,7 +243,7 @@ function App() {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2 scroll-smooth">
               {layers.length === 0 ? (
                 <p className="text-sm text-slate-400 italic">Không tìm thấy layer nào.</p>
               ) : (
@@ -236,8 +254,11 @@ function App() {
                   
                   return (
                     <div 
+                      id={`layer-${layer.name}`}
                       key={layer.name}
-                      className="flex items-center justify-between p-3 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
+                      className={`flex items-center justify-between p-3 rounded-xl transition-all ${
+                        highlightedLayer === layer.name ? 'bg-blue-600/40 border border-blue-500 shadow-inner' : 'bg-slate-700/30 hover:bg-slate-700/50'
+                      }`}
                     >
                       <div className="flex items-center gap-3">
                         <div 

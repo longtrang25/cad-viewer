@@ -11,13 +11,14 @@ export interface CADViewerRef {
 
 interface CADViewerProps {
   fileUrl: string;
-  activeTool: 'pan' | 'measure' | 'markup';
+  activeTool: 'pan' | 'measure' | 'markup' | 'select_layer';
   markupColor?: string;
   onLayersLoaded: (layers: LayerInfo[]) => void;
   onMeasureResult?: (distance: number, pt1: THREE.Vector3, pt2: THREE.Vector3) => void;
+  onLayerSelected?: (layerName: string) => void;
 }
 
-const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeTool, markupColor = '#ef4444', onLayersLoaded, onMeasureResult }, ref) => {
+const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeTool, markupColor = '#ef4444', onLayersLoaded, onMeasureResult, onLayerSelected }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerInstance = useRef<DxfViewer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,7 +90,7 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
     if (!canvas) return;
 
     const handlePointerDown = (e: PointerEvent) => {
-      if (activeTool !== 'measure') return;
+      if (activeTool !== 'measure' && activeTool !== 'select_layer') return;
       e.stopPropagation();
 
       const viewer = viewerInstance.current;
@@ -102,6 +103,25 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
       const camera = viewer.GetCamera();
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+
+      if (activeTool === 'select_layer') {
+        const scene = viewer.GetScene();
+        if (scene && onLayerSelected) {
+          raycaster.params.Line.threshold = (camera.top - camera.bottom) * 0.02;
+          raycaster.params.Points.threshold = (camera.top - camera.bottom) * 0.02;
+          const intersects = raycaster.intersectObjects(scene.children, true);
+          if (intersects.length > 0) {
+            let obj: any = intersects[0].object;
+            while (obj && !obj._dxfViewerLayer) {
+              obj = obj.parent;
+            }
+            if (obj && obj._dxfViewerLayer) {
+              onLayerSelected(obj._dxfViewerLayer.name);
+            }
+          }
+        }
+        return;
+      }
 
       const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
       const target = new THREE.Vector3();
@@ -131,7 +151,7 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
       }
     };
 
-    if (activeTool === 'measure') {
+    if (activeTool === 'measure' || activeTool === 'select_layer') {
       canvas.addEventListener('pointerdown', handlePointerDown, { capture: true });
     }
 
