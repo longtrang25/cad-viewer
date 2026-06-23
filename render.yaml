@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: cad-viewer-backend
+    env: docker
+    region: singapore
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
