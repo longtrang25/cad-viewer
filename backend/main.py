@@ -12,8 +12,8 @@ app = FastAPI()
 # Cấu hình CORS để cho phép frontend gọi tới
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Trong production nên set rõ tên miền
-    allow_credentials=True,
+    allow_origins=["*"], 
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

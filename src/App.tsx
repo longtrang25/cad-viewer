@@ -37,7 +37,7 @@ function App() {
           const formData = new FormData();
           formData.append('file', file);
           
-          const serverUrl = apiUrl.replace(/\/$/, ''); // Xóa dấu slash cuối nếu có
+          const serverUrl = apiUrl.trim().replace(/\/$/, '');
           const response = await fetch(`${serverUrl}/api/convert-dwg`, {
             method: 'POST',
             body: formData,
