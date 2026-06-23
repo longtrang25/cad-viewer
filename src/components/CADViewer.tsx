@@ -57,7 +57,7 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
         setLoading(false);
       } catch (error) {
         console.error('Lỗi khi load file DXF:', error);
-        alert('Lỗi khi load file DXF: ' + (error.message || error));
+        alert('Lỗi khi load file DXF: ' + (error as Error).message);
         setLoading(false);
       }
     };
