@@ -23,6 +23,8 @@ function App() {
   const [highlightedLayer, setHighlightedLayer] = useState<string | null>(null);
   const [measureResult, setMeasureResult] = useState<number | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('CAD_API_URL') || import.meta.env.VITE_API_URL || 'http://localhost:8000');
 
   const viewerRef = useRef<CADViewerRef>(null);
 
@@ -35,7 +37,8 @@ function App() {
           const formData = new FormData();
           formData.append('file', file);
           
-          const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/convert-dwg` : '/api/convert-dwg', {
+          const serverUrl = apiUrl.replace(/\/$/, ''); // Xóa dấu slash cuối nếu có
+          const response = await fetch(`${serverUrl}/api/convert-dwg`, {
             method: 'POST',
             body: formData,
           });
@@ -121,10 +124,23 @@ function App() {
             >
               <Layers size={20} />
             </button>
-            <button className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors">
+            <button 
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
+            >
               <Settings size={20} />
             </button>
           </div>
+        )}
+        
+        {/* Nút cài đặt cho trang chủ (khi chưa mở file) */}
+        {!fileUrl && (
+          <button 
+            onClick={() => setSettingsOpen(true)}
+            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+          >
+            <Settings size={20} />
+          </button>
         )}
       </header>
 
@@ -281,6 +297,45 @@ function App() {
                   );
                 })
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Settings Modal Overlay */}
+        {settingsOpen && (
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Settings size={22} className="text-blue-400" /> Cài đặt hệ thống
+              </h2>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Máy chủ xử lý bản vẽ DWG (API Server)
+                </label>
+                <input 
+                  type="text" 
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  placeholder="https://...ngrok.app hoặc http://192.168..."
+                  className="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                />
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  Để đọc file DWG trên điện thoại, máy chủ API phải bắt đầu bằng <b>https://</b> (vd: dùng Ngrok để chuyển tiếp localhost lên https).
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => {
+                    localStorage.setItem('CAD_API_URL', apiUrl);
+                    setSettingsOpen(false);
+                  }}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
+                >
+                  Lưu & Đóng
+                </button>
+              </div>
             </div>
           </div>
         )}
