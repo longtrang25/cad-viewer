@@ -106,18 +106,113 @@ const CADViewer = forwardRef<CADViewerRef, CADViewerProps>(({ fileUrl, activeToo
 
       if (activeTool === 'select_layer') {
         const scene = viewer.GetScene();
-        if (scene && onLayerSelected) {
-          raycaster.params.Line.threshold = (camera.top - camera.bottom) * 0.02;
-          raycaster.params.Points.threshold = (camera.top - camera.bottom) * 0.02;
-          const intersects = raycaster.intersectObjects(scene.children, true);
-          if (intersects.length > 0) {
-            let obj: any = intersects[0].object;
-            while (obj && !obj._dxfViewerLayer) {
-              obj = obj.parent;
+        const renderer = viewer.GetRenderer();
+        if (scene && renderer && onLayerSelected) {
+          const originalMaterials = new Map<any, any>();
+          const colorToLayer = new Map<number, string>();
+          let nextColorId = 1;
+
+          scene.traverse((obj: any) => {
+            if (obj.material && obj._dxfViewerLayer) {
+              originalMaterials.set(obj, obj.material);
+              const layerName = obj._dxfViewerLayer.name;
+              
+              let hex = 0;
+              for (const [existingHex, name] of colorToLayer.entries()) {
+                 if (name === layerName) {
+                     hex = existingHex;
+                     break;
+                 }
+              }
+              if (hex === 0) {
+                 const i = nextColorId++;
+                 const r = (i % 10) * 25;
+                 const g = (Math.floor(i / 10) % 10) * 25;
+                 const b = (Math.floor(i / 100) % 10) * 25 + 50;
+                 hex = (r << 16) | (g << 8) | b;
+                 colorToLayer.set(hex, layerName);
+              }
+
+              const newMat = obj.material.clone();
+              if (newMat.uniforms && newMat.uniforms.color) {
+                 newMat.uniforms.color.value = new THREE.Color(hex);
+              }
+              obj.material = newMat;
             }
-            if (obj && obj._dxfViewerLayer) {
-              onLayerSelected(obj._dxfViewerLayer.name);
+          });
+
+          // Disable clear color
+          const oldClearColor = new THREE.Color();
+          renderer.getClearColor(oldClearColor);
+          const oldClearAlpha = renderer.getClearAlpha();
+          renderer.setClearColor(0x000000, 0);
+
+          // Render target
+          const rt = new THREE.WebGLRenderTarget(canvas.width, canvas.height, {
+              format: THREE.RGBAFormat,
+              type: THREE.UnsignedByteType,
+              minFilter: THREE.NearestFilter,
+              magFilter: THREE.NearestFilter,
+              generateMipmaps: false,
+          });
+
+          renderer.setRenderTarget(rt);
+          renderer.clear();
+          renderer.render(scene, camera);
+
+          // Read pixel area
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const clientX = (e.clientX - rect.left) * scaleX;
+          const clientY = (e.clientY - rect.top) * scaleY;
+          const glX = Math.floor(clientX);
+          const glY = Math.floor(canvas.height - clientY);
+
+          const readSize = 9; // 9x9 area to make thin lines easier to click
+          const readBuffer = new Uint8Array(readSize * readSize * 4);
+          renderer.readRenderTargetPixels(rt, glX - Math.floor(readSize/2), glY - Math.floor(readSize/2), readSize, readSize, readBuffer);
+
+          let pickedLayer = "";
+          for (let i = 0; i < readSize * readSize; i++) {
+             const r = readBuffer[i*4];
+             const g = readBuffer[i*4 + 1];
+             const b = readBuffer[i*4 + 2];
+             const a = readBuffer[i*4 + 3];
+             if (a > 0 && (r > 0 || g > 0 || b > 0)) {
+                 let bestDist = Infinity;
+                 let bestLayer = "";
+                 for (const [lHex, name] of colorToLayer.entries()) {
+                     const lr = (lHex >> 16) & 0xff;
+                     const lg = (lHex >> 8) & 0xff;
+                     const lb = lHex & 0xff;
+                     const dist = Math.abs(r - lr) + Math.abs(g - lg) + Math.abs(b - lb);
+                     if (dist < bestDist) {
+                         bestDist = dist;
+                         bestLayer = name;
+                     }
+                 }
+                 if (bestDist < 20) {
+                     pickedLayer = bestLayer;
+                     break;
+                 }
+             }
+          }
+
+          // Restore
+          renderer.setRenderTarget(null);
+          renderer.setClearColor(oldClearColor, oldClearAlpha);
+          rt.dispose();
+
+          scene.traverse((obj: any) => {
+            if (originalMaterials.has(obj)) {
+              obj.material.dispose();
+              obj.material = originalMaterials.get(obj);
             }
+          });
+          viewer.Render();
+
+          if (pickedLayer) {
+             onLayerSelected(pickedLayer);
           }
         }
         return;
